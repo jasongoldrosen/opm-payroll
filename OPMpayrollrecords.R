@@ -191,7 +191,4 @@ sorts
 # sample <- read.table("https://ia800608.us.archive.org/16/items/opm-federal-employment-data/data/2014-09-to-2016-09/non-dod/status/Non_DoD_201609.txt", header = FALSE, sep = "|", nrows = 100)
 # 
 # 
-# x <- read.fwf(
-#   file=url("http://www.cpc.ncep.noaa.gov/data/indices/wksst8110.for"),
-#   skip=4,
-#   widths=c(12, 7, 4, 9, 4, 9, 4, 9, 4))
+
