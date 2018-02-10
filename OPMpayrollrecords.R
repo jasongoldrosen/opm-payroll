@@ -1,4 +1,5 @@
-######################R portion of the program######################
+#Jason Goldrosen
+#2-9-18
 library(readr)
 library(data.table)
 library(ggplot2)
@@ -18,6 +19,7 @@ years <- c(seq(1975,2010,by=5), 2013)
 for (yyyy in years) {
 path <- paste0("/Volumes/Samsung USB/Status_Non_DoD_",yyyy,"_12",".txt")
 
+#Import data
 x <- read_fwf(
 file=path,
 #n_max = 10000,
