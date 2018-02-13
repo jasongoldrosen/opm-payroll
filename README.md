@@ -1,6 +1,4 @@
 # opm-payroll
-Code to analyze OPM payroll records
-
 In response to a FOIA request from Buzzfeed News, the data was first made available in May 2017. More information on the data can be found here: https://www.buzzfeed.com/jsvine/sharing-hundreds-of-millions-of-federal-payroll-records?utm_term=.habyqzyrA#.rgpq9xq8L
 
 The underlying .TXT files are available for download here: https://archive.org/download/opm-federal-employment-data/data/
