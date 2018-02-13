@@ -1,11 +1,10 @@
 #Jason Goldrosen
 #2-13-18
-library(readr)
-library(data.table)
-library(dplyr)
-library(ggplot2)
-library(RCurl)
+#The follwing program analyzes the demographic trends of the federal workforce over the last 40 years.
 #Documenation for data available: https://ia800608.us.archive.org/16/items/opm-federal-employment-data/docs/2015-02-11-opm-foia-response.pdf
+
+pacman::p_load(readr, data.table, dplyr, ggplot2) 
+
 #Clear working environment
 rm(list = ls())
 
@@ -44,7 +43,7 @@ employees <- rbind(data.table(dod), data.table(nondod))
 loslevel <- employees[ , .(.N, year = yyyy), loslevel]
 age <- employees[ , .(.N, year = yyyy), age]
 educ <- employees[ , .(.N, year = yyyy), educ]
-agency <- employees[ , .(.N, year = yyyy), substr(agency,1,2)]
+agency <- employees[ , .(.N, year = yyyy), by = .(AGY = substr(agency,1,2))]
 subagency <- employees[ , .(.N, year = yyyy), agency]
 
 
@@ -63,16 +62,17 @@ if (yyyy == years[1]) {
 }
 }
 
+
+#####Distribution of Federal Workers by Age#####
 #Extend age categories such that they span 10 years rather than 5 (e.g. "25-29" and "30-34" --> "25-34")
 age.panel.10years <- data.table(mutate(mutate(age.panel, age.numeric = as.numeric(substr(age,1,2))), age.category = ifelse(age.numeric <= 24, "<25",
-                                                                                                         ifelse(age.numeric <=34, "25-34",       
-                                                                                                         ifelse(age.numeric <=44, "35-44",        
-                                                                                                         ifelse(age.numeric <=54, "45-54",
-                                                                                                         ifelse(age.numeric <=64, "55-64", "65+")))))))[ , .(N = sum(N), age.numeric = min(age.numeric)), by = .(year, age.category)][order(year, age.numeric)]
+                                                                                                                    ifelse(age.numeric <=34, "25-34",       
+                                                                                                                    ifelse(age.numeric <=44, "35-44",        
+                                                                                                                    ifelse(age.numeric <=54, "45-54",
+                                                                                                                    ifelse(age.numeric <=64, "55-64", 
+                                                                                                                    "65+")))))))[ , .(N = sum(N), age.numeric = min(age.numeric)), by = .(year, age.category)][order(year, age.numeric)]
+
 age.panel.10years <-  merge(x=age.panel.10years, y=age.panel.10years[, .(NTOT = sum(N)), by=year], by = "year")[ , share := N/NTOT]
-
-
-
 
 
 #Age Plot
@@ -81,86 +81,84 @@ x.title <- "Age"
 y.title <- "Share of Federal Workforce"
 footnote <-"Source: OPM"
 legend.title <- "Year"
-  
+positions <- c("<25", "25-34", "35-44", "45-54", "55-64", "65+") #Positions along Horizontal Axis
+
 age_plot <- ggplot(data=age.panel.10years, aes(x=age.category, y=share, fill=as.factor(year))) 
 age_plot + geom_bar(stat="identity", position=position_dodge()) + 
           xlab(x.title) + 
           ylab(y.title) + 
           labs(title = plot.title, caption=footnote) + 
-          scale_fill_discrete(guide = guide_legend(title = legend.title))
+          scale_fill_discrete(guide = guide_legend(title = legend.title)) +
+          scale_x_discrete(limits = positions)
 
 
-#Extend age categories such that they span 10 years rather than 5 (e.g. "25-29" and "30-34" --> "25-34")
+#####Distribution of Federal Workers by Length of Service#####
+#Extend length of service categories such that each is 5 years long (e.g. 0-4,5-9, ..., 25+)
 loslevel.panel.5years <- data.table(mutate(mutate(loslevel.panel, loslevel.numeric= as.numeric(gsub("-","",substr(gsub("< ", "", loslevel),1,2)))), loslevel.category = ifelse(loslevel.numeric <= 4, "0-4",
-                                                                                                                                                        ifelse(loslevel.numeric <= 9, "5-9",
-                                                                                                                                                        ifelse(loslevel.numeric <= 14, "10-14",
-                                                                                                                                                        ifelse(loslevel.numeric <= 19, "15-19",
-                                                                                                                                                        ifelse(loslevel.numeric <= 24, "20-24",
-                                                                                                                                                        "25+")))))))
+                                                                                                                                                                        ifelse(loslevel.numeric <= 9, "5-9",
+                                                                                                                                                                        ifelse(loslevel.numeric <= 14, "10-14",
+                                                                                                                                                                        ifelse(loslevel.numeric <= 19, "15-19",
+                                                                                                                                                                        ifelse(loslevel.numeric <= 24, "20-24",
+                                                                                                                                                                        "25+")))))))[ , .(N = sum(N), loslevel.numeric = min(loslevel.numeric)), by = .(year, loslevel.category)][order(year, loslevel.numeric)]
 
-loslevel.panel.5years[ , .(N = sum(N), loslevel.numeric = min(loslevel.numeric)), by = .(year, loslevel.category)][order(year, loslevel.numeric)]
+loslevel.panel.5years <-  merge(x=loslevel.panel.5years, y=loslevel.panel.5years[, .(NTOT = sum(N)), by=year], by = "year")[ , share := N/NTOT]
 
+#Length of Service Plot
+plot.title <- "Length of Service Distribution of the Federal Workforce"
+x.title <- "Years of Service"
+y.title <- "Share of Federal Workforce"
+footnote <-"Source: OPM"
+legend.title <- "Year"
+positions <- c("0-4", "5-9", "10-14", "15-19", "20-24", "25+") #Positions along Horizontal Axis
 
-
-mutate(mutate(loslevel.panel, loslevel.numeric= as.numeric(gsub("-","",substr(gsub("< ", "", loslevel),1,2)))), loslevel.category = ifelse(loslevel.numeric <= 4, "0-4","25+"))
-
-
-
-
-(mutate(mutate(loslevel.panel.5years, age.numeric = as.numeric(substr(age,1,2))), age.category = 
-
-
-
-
-
-
-
-
-loslevel.panel.5years <- data.table(mutate(mutate(age.panel, age.numeric = as.numeric(substr(age,1,2))), age.category = ifelse(age.numeric <= 24, "<25",
-                                                                                                                           ifelse(age.numeric <=34, "25-34",       
-                                                                                                                                  ifelse(age.numeric <=44, "35-44",        
-                                                                                                                                         ifelse(age.numeric <=54, "45-54",
-                                                                                                                                                ifelse(age.numeric <=64, "55-64", "65+")))))))[ , .(N = sum(N), age.numeric = min(age.numeric)), by = .(year, age.category)][order(year, age.numeric)]
-age.panel.10years <-  merge(x=age.panel.10years, y=age.panel.10years[, .(NTOT = sum(N)), by=year], by = "year")[ , share := N/NTOT]
+loslevel_plot <- ggplot(data=loslevel.panel.5years, aes(x=loslevel.category, y=share, fill=as.factor(year))) 
+loslevel_plot + geom_bar(stat="identity", position=position_dodge()) + 
+  xlab(x.title) + 
+  ylab(y.title) + 
+  labs(title = plot.title, caption=footnote) + 
+  scale_fill_discrete(guide = guide_legend(title = legend.title)) + 
+  scale_x_discrete(limits = positions)
 
 
 
-loslevel.panel <-  merge(x=loslevel.panel, y=loslevel.panel[, .(NTOT = sum(N)), by=year], by = "year")[ , share := N/NTOT]
-loslevel.panel[order(year,loslevel), ]
+#####Distribution of Federal Workers by Education#####
+#Partion education codes into four categories: HS or Less; Some College, Bachelor's, Graduate Degree
+educ.panel.categories <- data.table(mutate(mutate(educ.panel, educ.numeric = as.numeric(educ)), educ.category = ifelse(educ.numeric <=4, "HS or Less", 
+                                                                                                                ifelse(educ.numeric <=12, "Some College",
+                                                                                                                ifelse(educ.numeric <=14, "Bachelor's",
+                                                                                                                ifelse(educ.numeric <=22, "Graduate", NA))))))[ , .(N = sum(N), educ.numeric = min(educ.numeric)), by = .(year, educ.category)][order(year, educ.numeric)] 
+                                                                                                                  
+educ.panel.categories <-  merge(x=educ.panel.categories[is.na(educ.category) == FALSE], y=educ.panel.categories[is.na(educ.category) == FALSE, .(NTOT = sum(N)), by=year], by = "year")[ , share := N/NTOT]
 
-loslevel.plot <- ggplot(data=loslevel.panel, aes(x=loslevel, y=share, fill=as.factor(year))) 
-loslevel.plot + geom_bar(stat="identity", position=position_dodge()) 
+#Education Plot
+plot.title <- "Educational Distribution of the Federal Workforce"
+x.title <- "Highest Degree Attained"
+y.title <- "Share of Federal Workforce"
+footnote <-"Source: OPM"
+legend.title <- "Year"
+positions <- c("HS or Less", "Some College", "Bachelor's", "Graduate") #Positions along Horizontal Axis
+
+educ.plot <- ggplot(data=educ.panel.categories, aes(x=educ.category, y=share, fill=as.factor(year))) 
+educ.plot + geom_bar(stat="identity", position=position_dodge()) + 
+  xlab(x.title) + 
+  ylab(y.title) + 
+  labs(title = plot.title, caption=footnote) + 
+  scale_fill_discrete(guide = guide_legend(title = legend.title)) + 
+  scale_x_discrete(limits = positions)
+
   
+#Employment by Agency
+agency.panel.names <- merge(x=agency.panel, y=agencies[ ,.(AGY, AGYTYP, AGYT)], by="AGY", all.x = TRUE, all.y = TRUE)[AGYTYP == 1]
 
-as.numeric(substr(gsub("< ", "", loslevel.panel$loslevel),1,2))
+plot.title <- "Federal Employment by Cabinent Agency"
+x.title <- "Year"
+y.title <- "Total Workforce"
+footnote <-"Source: OPM"
+legend.title <- "Agency"
 
-
-mutate(loslevel.panel, loslevel.numeric = as.numeric(gsub("-","",substr(gsub("< ", "", loslevel),1,2))))
-
-loslevel.panel.test <- loslevel.panel[, loslevel.numeric := as.numeric(gsub("-","",substr(gsub("< ", "", loslevel),1,2)))]
-
-strings <- c(
-  "apple", 
-  "219 733 8965", 
-  "329-293-8753", 
-  "Work: 579-499-7527; Home: 543.355.3679"
-)
-phone <- "([2-9][0-9]{2})[- .]([0-9]{3})[- .]([0-9]{4})"
-
-
-#Shift with by to show how data have changed
-
-data.table(cbind(c("<1", "1-2", "")))
-
-head(mutate(mtcars, disp_l = disp / 61.0237))
-x <- 10
-ifelse(x > 9, "x is greater than 9", "x is not greater than 9")
-
-test <- data.frame(id= c(1, 2, 3), age = c("15-19", "35-39", "50-54", "70-74", "25-29", "UNSP"))
-test <- mutate(test, age.numeric = as.numeric(substr(age,1,2)))
-test <- mutate(test, age.category = ifelse(age.numeric <= 24, "<25", 
-                                    ifelse(age.numeric <=34, "25-34", 
-                                    ifelse(age.numeric <=44, "35-44", 
-                                    ifelse(age.numeric <=54, "45-54",
-                                    ifelse(age.numeric <=64, "55-64", "65+"))))))
-                                         
+agency.plot <-ggplot(agency.panel.names, aes(x = year, y = N, fill = AGYT)) 
+agency.plot + geom_area(position = 'stack')
+  xlab(x.title) + 
+  ylab(y.title) + 
+  labs(title = plot.title, caption=footnote) + 
+  scale_fill_discrete(guide = guide_legend(title = legend.title)) + 
