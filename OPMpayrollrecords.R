@@ -25,46 +25,47 @@ agencies <- subagencies[, .SD[1], by = AGY]
 
 #yyyy <-1975
 for (yyyy in years) {
-path.nondod  <- paste0(raw.data.path,"/Status_Non_DoD_",yyyy,"_12",".txt")
-path.dod <- paste0(raw.data.path,"/Status_DoD_",yyyy,"_12",".txt")
-
-nondod <- read_fwf(
-  file=path.nondod,
-  #n_max = 10000,
-  fwf_widths(opmwidth1973_2014status, col_names = opmheaders1973_2014status))
-
-dod <- read_fwf(
-  file=path.dod,
-  #n_max = 10000,
-  fwf_widths(opmwidth1973_2014status, col_names = opmheaders1973_2014status))
-
-employees <- rbind(data.table(dod), data.table(nondod))
-
-loslevel <- employees[ , .(.N, year = yyyy), loslevel]
-age <- employees[ , .(.N, year = yyyy), age]
-educ <- employees[ , .(.N, year = yyyy), educ]
-agency <- employees[ , .(.N, year = yyyy), by = .(AGY = substr(agency,1,2))]
-subagency <- employees[ , .(.N, year = yyyy), agency]
-
-
-if (yyyy == years[1]) {
-  loslevel.panel <-  loslevel
-  age.panel <-  age
-  educ.panel <-  educ
-  agency.panel <-  agency
-  subagency.panel <-  subagency
-} else {
-  loslevel.panel <- rbind(loslevel.panel, loslevel)
-  age.panel <- rbind(age.panel,age)
-  educ.panel <- rbind(educ.panel,educ)
-  agency.panel <- rbind(agency.panel,agency)
-  subagency.panel <- rbind(subagency.panel,subagency)
-}
+  path.nondod  <- paste0(raw.data.path,"/Status_Non_DoD_",yyyy,"_12",".txt")
+  path.dod <- paste0(raw.data.path,"/Status_DoD_",yyyy,"_12",".txt")
+  
+  nondod <- read_fwf(
+    file=path.nondod,
+    #n_max = 10000,
+    fwf_widths(opmwidth1973_2014status, col_names = opmheaders1973_2014status)) #All Non-Department of Defense Agencies
+  
+  dod <- read_fwf(
+    file=path.dod,
+    #n_max = 10000,
+    fwf_widths(opmwidth1973_2014status, col_names = opmheaders1973_2014status)) #All Department of Defense Agencies
+  
+  employees <- rbind(data.table(dod), data.table(nondod)) 
+  
+  #Summarize total employment by group
+  loslevel <- employees[ , .(.N, year = yyyy), loslevel] #Employment by Length of Service
+  age <- employees[ , .(.N, year = yyyy), age] #Employment by Age Range
+  educ <- employees[ , .(.N, year = yyyy), educ] # " " Educational Attainment
+  agency <- employees[ , .(.N, year = yyyy), by = .(AGY = substr(agency,1,2))] # " " Agency (.e.g., Department of Justice)
+  subagency <- employees[ , .(.N, year = yyyy), agency] # " " subagency (e.g., Drug Enforcement Agency within Department of Justice)
+  
+  #Concatenate the collapsed data sets
+  if (yyyy == years[1]) {
+    loslevel.panel <-  loslevel
+    age.panel <-  age
+    educ.panel <-  educ
+    agency.panel <-  agency
+    subagency.panel <-  subagency
+  } else {
+    loslevel.panel <- rbind(loslevel.panel, loslevel)
+    age.panel <- rbind(age.panel,age)
+    educ.panel <- rbind(educ.panel,educ)
+    agency.panel <- rbind(agency.panel,agency)
+    subagency.panel <- rbind(subagency.panel,subagency)
+  }
 }
 
 
 #####Distribution of Federal Workers by Age#####
-#Extend age categories such that they span 10 years rather than 5 (e.g. "25-29" and "30-34" --> "25-34")
+#Extend age categories such that they span 10 years rather than 5 (e.g. "25-29" and "30-34" are combined into "25-34")
 age.panel.10years <- data.table(mutate(mutate(age.panel, age.numeric = as.numeric(substr(age,1,2))), age.category = ifelse(age.numeric <= 24, "<25",
                                                                                                                     ifelse(age.numeric <=34, "25-34",       
                                                                                                                     ifelse(age.numeric <=44, "35-44",        
@@ -147,7 +148,7 @@ educ.plot + geom_bar(stat="identity", position=position_dodge()) +
   scale_x_discrete(limits = positions)
 
   
-#Employment by Agency
+#####Distribution of Federal Workers by Agency#####
 agency.panel.names <- merge(x=agency.panel, y=agencies[ ,.(AGY, AGYTYP, AGYT)], by="AGY", all.x = TRUE, all.y = TRUE)[AGYTYP == 1]
 
 plot.title <- "Federal Employment by Cabinent Agency"
@@ -161,4 +162,4 @@ agency.plot + geom_area(position = 'stack')
   xlab(x.title) + 
   ylab(y.title) + 
   labs(title = plot.title, caption=footnote) + 
-  scale_fill_discrete(guide = guide_legend(title = legend.title)) + 
+  scale_fill_discrete(guide = guide_legend(title = legend.title))  
